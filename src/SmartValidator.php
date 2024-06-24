@@ -51,13 +51,23 @@ class SmartValidator
                 throw new InvalidArgumentException("Tipo não especificado para a propriedade '{$property}'.");
             }
     
-            $validatedValue = $this->validatePropertyValue($value, $rule['type']);
+            $validatedValue = $this->validatePropertyValue(
+                $property,
+                $value,
+                $rule['type'],
+                $rule['required']
+            );
+
             $this->validated[$camelCaseProperty] = $validatedValue;
         }
     }
 
-    private function validatePropertyValue($value, $type): mixed
+    private function validatePropertyValue(string $property, mixed $value, string $type, bool $required = false): mixed
     {
+        if ($required && !is_numeric($value)) {
+            throw new InvalidArgumentException("O campo '{$property}' é obrigatório.");
+        }
+
         return match ($type) {
             'bool' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
             'int' => filter_var($value, FILTER_VALIDATE_INT),
