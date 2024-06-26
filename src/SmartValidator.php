@@ -4,27 +4,21 @@ declare(strict_types=1);
 
 namespace Validator\Application;
 
+use Countable;
+use DateTime;
 use InvalidArgumentException;
 
 class SmartValidator
 {
-    private array $rules = [];
-    private array $data = [];
     private array $validated = [];
 
-    public function __construct(
-        array|object $data,
-        array $rules
-    ) {
-        settype($data, 'array');
-        $this->extractRules($data, $rules);
+    public function __construct(array $data, array $rules)
+    {
+        $this->validateData($data, $rules);
     }
 
-    private function extractRules(array $data, array $rules): void
+    private function validateData(array $data, array $rules): void
     {
-        $this->data = $data;
-        $this->rules = $rules;
-
         foreach ($rules as $property => $rawRules) {
             if (!array_key_exists($property, $data)) {
                 continue;
@@ -42,11 +36,12 @@ class SmartValidator
             }
 
             foreach ($rules as $rule) {
-                if (! $pos = strpos($rule, ':')) {
+                if (!str_contains($rule, ':')) {
                     $this->validated[$property] = $this->applySimpleRule($property, $rule, $data[$property]);
                     continue;
                 }
-
+            
+                $pos = strpos($rule, ':');
                 $ruleName = substr($rule, 0, $pos);
                 $ruleValue = substr($rule, $pos + 1);
                 $this->validated[$property] = $this->applyComplexRule($property, $ruleName, $ruleValue, $data[$property]);
@@ -174,7 +169,7 @@ class SmartValidator
 
     private function validateDateFormat(string $value, string $format, string $property): string
     {
-        $dateTime = \DateTime::createFromFormat($format, $value);
+        $dateTime = DateTime::createFromFormat($format, $value);
 
         if ($dateTime && $dateTime->format($format) === $value) {
             return $value;
@@ -185,8 +180,8 @@ class SmartValidator
 
     private function validateBefore(string $value, string $date, string $format, string $property): string
     {
-        $dateTime = \DateTime::createFromFormat($format, $value);
-        $beforeTime = \DateTime::createFromFormat($format, $date);
+        $dateTime = DateTime::createFromFormat($format, $value);
+        $beforeTime = DateTime::createFromFormat($format, $date);
 
         if ($dateTime && $beforeTime && $dateTime < $beforeTime) {
             return $value;
@@ -197,8 +192,8 @@ class SmartValidator
 
     private function validateAfter(string $value, string $date, string $format, string $property): string
     {
-        $dateTime = \DateTime::createFromFormat($format, $value);
-        $afterTime = \DateTime::createFromFormat($format, $date);
+        $dateTime = DateTime::createFromFormat($format, $value);
+        $afterTime = DateTime::createFromFormat($format, $date);
 
         if ($dateTime && $afterTime && $dateTime > $afterTime) {
             return $value;
@@ -218,20 +213,16 @@ class SmartValidator
 
     private function validateSize(mixed $value, int $size, string $property): mixed
     {
-        $actualSize = 0;
-
-        if (is_string($value)) {
-            $actualSize = mb_strlen($value, '8bit');
-        } elseif (is_array($value)) {
-            $actualSize = count($value);
-        } elseif (is_object($value) && $value instanceof \Countable) {
-            $actualSize = count($value);
-        }
-
+        $actualSize = match (true) {
+            is_string($value) => mb_strlen($value, '8bit'),
+            is_array($value) || (is_object($value) && $value instanceof \Countable) => count($value),
+            default => 0,
+        };
+    
         if ($actualSize === $size) {
             return $value;
         }
-
+    
         throw new InvalidArgumentException("O tamanho para '{$property}' deve ser {$size}.");
     }
 
@@ -246,8 +237,8 @@ class SmartValidator
         throw new InvalidArgumentException("O MIME type para '{$property}' deve ser um dos seguintes: " . implode(', ', $allowedMimes) . ".");
     }
 
-    public function getValidated(): array
+    public function getValidated(bool $associative = false): array|object
     {
-        return $this->validated;
+        return $associative ? $this->validated : (object) $this->validated;
     }
 }
