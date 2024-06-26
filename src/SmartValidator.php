@@ -22,6 +22,9 @@ class SmartValidator
 
     private function extractRules(array $data, array $rules): void
     {
+        $this->data = $data;
+        $this->rules = $rules;
+
         foreach ($rules as $property => $rawRules) {
             if (!array_key_exists($property, $data)) {
                 continue;
@@ -35,7 +38,7 @@ class SmartValidator
 
             if (str_contains($rawRules, 'nullable') && is_null($data[$property])) {
                 $this->validated[$property] = null;
-                break;
+                continue;
             }
 
             foreach ($rules as $rule) {
@@ -63,7 +66,7 @@ class SmartValidator
             'ip' => filter_var($value, FILTER_VALIDATE_IP),
             'required' => $this->validateRequired($value, $property),
             'uuid' => $this->validateUuid($value, $rule),
-            default => throw new InvalidArgumentException("A regra '{$rule}' não é suportada para a propriedade '{$property}'.")
+            default => throw new InvalidArgumentException("A regra '{$rule}' não existe.")
         };
     }
 
@@ -94,7 +97,7 @@ class SmartValidator
                 $allowedMimes = explode(',', $ruleValue);
                 return $this->validateMime($value, $allowedMimes, $property);
             default:
-                throw new InvalidArgumentException("A regra '{$ruleName}' não é suportada para a propriedade '{$property}'.");
+                throw new InvalidArgumentException("A regra '{$ruleName}' não existe.");
         }
     }
 
@@ -248,4 +251,3 @@ class SmartValidator
         return $this->validated;
     }
 }
-

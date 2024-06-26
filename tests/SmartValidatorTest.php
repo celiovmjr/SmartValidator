@@ -28,6 +28,15 @@ class SmartValidatorTest extends TestCase
         $this->assertEquals($data, $validator->getValidated());
     }
 
+    public function testValidDateFormat(): void
+    {
+        $data = ['dateFormat' => '2024-06'];
+        $rules = ['dateFormat' => 'required|format:Y-m'];
+        $validator = new SmartValidator($data, $rules);
+
+        $this->assertEquals($data, $validator->getValidated());
+    }
+
     public function testAgeMinInvalid(): void
     {
         $data = ['age' => 17];
