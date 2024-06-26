@@ -1,69 +1,82 @@
 # SmartValidator
 
-The `SmartValidator` is a PHP class that facilitates data validation and sanitization based on specific rules defined for each property. It is useful in applications where ensuring data integrity and security before processing is crucial.
+The **SmartValidator** is a PHP class designed to validate and filter input data based on configurable rules. It supports a variety of simple and complex validations, ensuring that data meets specified criteria before being considered valid.
 
-## Features
+## Installation
 
-- **Data Type Validation:** Supports validation of types such as boolean, integer, float, string, datetime, UUID, email, URL, and IP address.
-- **Data Sanitization:** Provides methods to sanitize strings and ensure potentially dangerous data is handled properly.
-- **Flexibility in Date Formats:** Accepts a variety of date formats for validation, including ISO formats, common date formats, and custom formats.
-
-## Basic Usage
-
-### Instantiation
+To use the SmartValidator, include the `SmartValidator.php` class file in your PHP project and instantiate the class as needed.
 
 ```php
-use App\Core\SmartValidator;
+require_once 'SmartValidator.php';
 
-// Example data and rules
+// Basic usage example
 $data = [
-    'username' => 'john_doe',
-    'email' => 'john.doe@example.com',
-    'birthdate' => '1990-01-01',
+    'name' => 'John Doe',
+    'email' => 'john@example.com',
+    'age' => 30,
 ];
 
 $rules = [
-    'username' => ['type' => 'string'],
-    'email' => ['type' => 'email'],
-    'birthdate' => ['type' => 'DateTime'],
+    'name' => 'string|required',
+    'email' => 'email|required',
+    'age' => 'int|required|min:18',
 ];
 
-// Creating an instance of SmartValidator
-$validator = new SmartValidator($data, $rules);
-
-// Getting validated data
+$validator = new Validator\Application\SmartValidator($data, $rules);
 $validatedData = $validator->getValidated();
+
+// $validatedData will contain the validated data according to the specified rules
 ```
 
-## Technical Details
+## Features
 
-The class utilizes PHP's native features such as `filter_var` for validation and `DateTime` for date handling. String sanitization is performed using `FILTER_SANITIZE_SPECIAL_CHARS`.
+### Constructor
 
-## Supported Date Formats
+```php
+public function __construct(array|object $data, array $rules)
+```
 
-The class supports the following date formats for validation:
+- **$data**: Associative array containing the data to be validated.
+- **$rules**: Associative array where keys represent property names to validate, and values are strings containing validation rules separated by pipe (`|`).
 
-- `Y-m-d`
-- `Y-m`
-- `d/m/Y`
-- `m/Y`
-- `Y-m-d H:i:s`
-- `d/m/Y H:i:s`
-- `Ymd`
-- `d-m-Y`
-- `d-M-Y`
-- `Y-m-d\TH:i:s.u`
-- `Y-m-d\TH:i:sP`
-- `Y-m-d\TH:i:sO`
-- `Y-m-d\TH:i:s`
-- `Y-m-d\TH:i:s.v`
-- `d-M-Y H:i:s`
-- `d-M-Y h:i:s A`
+### Supported Validation Methods
 
-## Contribution
+The SmartValidator supports the following types of validation:
 
-Contributions are welcome! If you identify issues, have suggestions for improvements, or want to add new features, feel free to open an issue or submit a pull request.
+- **Simple Types**:
+  - `string`: Validates if the value is a string and applies sanitization.
+  - `bool`: Validates and converts the value to boolean.
+  - `int`: Validates and converts the value to integer.
+  - `float`: Validates and converts the value to float.
+  - `email`: Validates if the value is a valid email address.
+  - `url`: Validates if the value is a valid URL.
+  - `ip`: Validates if the value is a valid IP address.
+  - `required`: Validates if the value is not null or empty.
+  - `uuid`: Validates if the value is a valid UUID.
 
-## License
+- **Complex Validations**:
+  - `min:x`: Validates if the numeric value is greater than or equal to `x`, or if the string has at least `x` characters.
+  - `max:x`: Validates if the numeric value is less than or equal to `x`, or if the string has at most `x` characters.
+  - `range:min,max`: Validates if the value is within the specified range.
+  - `format:format`: Validates if the value matches the specified date format.
+  - `before:date,format`: Validates if the value is a date before the specified date.
+  - `after:date,format`: Validates if the value is a date after the specified date.
+  - `in:val1,val2,...`: Validates if the value is among the allowed values.
+  - `size:size`: Validates if the size of the value is equal to `size`.
+  - `mime:type1,type2,...`: Validates if the MIME type of the value is among the allowed types.
 
-This project is licensed under the [MIT License](LICENSE).
+### Exceptions
+
+The SmartValidator throws `InvalidArgumentException` when a validation fails, with detailed error messages explaining the reason for the validation failure.
+
+### Return
+
+- **getValidated()**: Returns an associative array containing successfully validated data according to the specified rules.
+
+```php
+public function getValidated(): array
+```
+
+## Final Notes
+
+The SmartValidator offers a flexible solution for data validation in PHP, providing a robust mechanism to ensure input data meets defined requirements before processing or storing. It facilitates the implementation of complex validations in a clear and structured manner, promoting data security and integrity in PHP applications.
