@@ -61,7 +61,8 @@ class SmartValidator
             'ip' => filter_var($value, FILTER_VALIDATE_IP),
             'required' => $this->validateRequired($value, $property),
             'uuid' => $this->validateUuid($value, $rule),
-            default => throw new InvalidArgumentException("A regra '{$rule}' não existe.")
+            'nullable' => filter_var($value, FILTER_UNSAFE_RAW),
+            default => throw new InvalidArgumentException("A regra '$rule' não existe.")
         };
     }
 
@@ -92,19 +93,17 @@ class SmartValidator
                 $allowedMimes = explode(',', $ruleValue);
                 return $this->validateMime($value, $allowedMimes, $property);
             default:
-                throw new InvalidArgumentException("A regra '{$ruleName}' não existe.");
+                throw new InvalidArgumentException("A regra '$ruleName' não existe.");
         }
     }
 
     private function validateRequired(mixed $value, string $property): mixed
     {
         $isValid = match (gettype($value)) {
-            'boolean', 'integer', 'double' => true,
+            'boolean', 'integer', 'double', 'resource' => true,
             'string' => $value !== '',
-            'NULL' => false,
             'array' => !empty($value),
             'object' => !empty(get_object_vars($value)),
-            'resource' => true,
             default => false,
         };
 
@@ -112,7 +111,7 @@ class SmartValidator
             return $value;
         }
 
-        throw new InvalidArgumentException("O campo '{$property}' é obrigatório.");
+        throw new InvalidArgumentException("O campo '$property' é obrigatório.");
     }
 
     private function validateUuid(string $uuid, string $rule): ?string
@@ -121,17 +120,17 @@ class SmartValidator
             return $uuid;
         }
 
-        throw new InvalidArgumentException("O valor fornecido não é um '{$rule}' válido.");
+        throw new InvalidArgumentException("O valor fornecido não é um '$rule' válido.");
     }
 
-    private function validateMin(mixed $value, int $min, string $property): mixed
+    private function validateMin(mixed $value, int $min, string $property): string|int|float
     {
         if (is_numeric($value)) {
             if ($value >= $min) {
                 return $value;
             }
 
-            throw new InvalidArgumentException("O valor para '{$property}' deve ser maior que '{$min}'");
+            throw new InvalidArgumentException("O valor para '$property' deve ser maior que '$min'");
         }
 
         if (is_string($value)) {
@@ -139,10 +138,10 @@ class SmartValidator
                 return $value;
             }
 
-            throw new InvalidArgumentException("O valor para '{$property}' deve ter ao menos '{$min}' caracteres");
+            throw new InvalidArgumentException("O valor para '$property' deve ter ao menos '$min' caracteres");
         }
 
-        throw new InvalidArgumentException("A regra 'min:x' não é válida para o campo '{$property}'.");
+        throw new InvalidArgumentException("A regra 'min:x' não é válida para o campo '$property'.");
     }
 
     private function validateMax(mixed $value, int $max, string $property): mixed
@@ -155,16 +154,16 @@ class SmartValidator
             return $value;
         }
 
-        throw new InvalidArgumentException("O valor para '{$property}' deve atender ao máximo permitido.");
+        throw new InvalidArgumentException("O valor para '$property' deve atender ao máximo permitido.");
     }
 
-    private function validateRange(mixed $value, string $min, string $max, string $property): mixed
+    private function validateRange(mixed $value, string $min, string $max, string $property): string|int|float
     {
         if (is_numeric($value) && $value >= $min && $value <= $max) {
             return $value;
         }
 
-        throw new InvalidArgumentException("O valor para '{$property}' deve estar entre {$min} e {$max}.");
+        throw new InvalidArgumentException("O valor para '$property' deve estar entre $min e $max.");
     }
 
     private function validateDateFormat(string $value, string $format, string $property): string
@@ -175,7 +174,7 @@ class SmartValidator
             return $value;
         }
 
-        throw new InvalidArgumentException("O valor para '{$property}' não está no formato '{$format}'.");
+        throw new InvalidArgumentException("O valor para '$property' não está no formato '$format'.");
     }
 
     private function validateBefore(string $value, string $date, string $format, string $property): string
@@ -187,7 +186,7 @@ class SmartValidator
             return $value;
         }
 
-        throw new InvalidArgumentException("O valor para '{$property}' deve estar antes de '{$date}'.");
+        throw new InvalidArgumentException("O valor para '$property' deve estar antes de '$date'.");
     }
 
     private function validateAfter(string $value, string $date, string $format, string $property): string
@@ -199,7 +198,7 @@ class SmartValidator
             return $value;
         }
 
-        throw new InvalidArgumentException("O valor para '{$property}' deve estar após '{$date}'.");
+        throw new InvalidArgumentException("O valor para '$property' deve estar após '$date'.");
     }
 
     private function validateIn(mixed $value, array $allowedValues, string $property): mixed
@@ -208,14 +207,14 @@ class SmartValidator
             return $value;
         }
 
-        throw new InvalidArgumentException("O valor para '{$property}' deve ser um dos seguintes: " . implode(', ', $allowedValues) . ".");
+        throw new InvalidArgumentException("O valor para '$property' deve ser um dos seguintes: " . implode(', ', $allowedValues) . ".");
     }
 
     private function validateSize(mixed $value, int $size, string $property): mixed
     {
         $actualSize = match (true) {
             is_string($value) => mb_strlen($value, '8bit'),
-            is_array($value) || (is_object($value) && $value instanceof \Countable) => count($value),
+            is_array($value) || ($value instanceof Countable) => count($value),
             default => 0,
         };
     
@@ -223,7 +222,7 @@ class SmartValidator
             return $value;
         }
     
-        throw new InvalidArgumentException("O tamanho para '{$property}' deve ser {$size}.");
+        throw new InvalidArgumentException("O tamanho para '$property' deve ser $size.");
     }
 
     private function validateMime(mixed $value, array $allowedMimes, string $property): mixed
@@ -234,7 +233,7 @@ class SmartValidator
             return $value;
         }
 
-        throw new InvalidArgumentException("O MIME type para '{$property}' deve ser um dos seguintes: " . implode(', ', $allowedMimes) . ".");
+        throw new InvalidArgumentException("O MIME type para '$property' deve ser um dos seguintes: " . implode(', ', $allowedMimes) . ".");
     }
 
     public function getValidated(bool $associative = false): array|object
