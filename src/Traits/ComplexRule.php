@@ -80,15 +80,28 @@ trait ComplexRule
         throw new InvalidArgumentException("O valor para '$property' deve estar entre $min e $max.");
     }
 
-    private function validateDateFormat(string $value, string $format, string $property): string
+    private function validateDateFormat(string $value, string $format, string $property): string|array
     {
-        $dateTime = DateTime::createFromFormat($format, $value);
-
-        if ($dateTime && $dateTime->format($format) === $value) {
-            return $value;
+        if (preg_match('/\[.*\]/', $format)) {
+            $dates = explode(', ', $value);
+            $format = str_replace(['[', ']'], '', $format);
+    
+            foreach ($dates as $dateString) {
+                $dateTime = DateTime::createFromFormat($format, $dateString);
+                if (!$dateTime || $dateTime->format($format) !== $dateString) {
+                    throw new InvalidArgumentException("O valor para '$property' não está no formato '$format'.");
+                }
+            }
+    
+            return $dates;
         }
 
-        throw new InvalidArgumentException("O valor para '$property' não está no formato '$format'.");
+        $dateTime = DateTime::createFromFormat($format, $value);
+        if (!$dateTime || $dateTime->format($format) !== $value) {
+            throw new InvalidArgumentException("O valor para '$property' não está no formato '$format'.");
+        }
+
+        return $value;
     }
 
     private function validateBefore(string $value, string $date, string $format, string $property): string
