@@ -44,6 +44,7 @@ class SmartValidator
             foreach ($rules as $rule) {
                 if (!str_contains($rule, ':')) {
                     $this->validated[$property] = $this->applySimpleRule($property, $rule, $data[$property]);
+                    settype($this->validated[$property], $rules[0]);
                     continue;
                 }
             
@@ -51,6 +52,7 @@ class SmartValidator
                 $ruleName = substr($rule, 0, $pos);
                 $ruleValue = substr($rule, $pos + 1);
                 $this->validated[$property] = $this->applyComplexRule($property, $ruleName, $ruleValue, $data[$property]);
+                settype($this->validated[$property], $rules[0]);
             }
         }
     }
